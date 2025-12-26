@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgendaPro Ejecutiva Premium</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --primary:#1e293b;
+  --secondary:#0ea5e9;
+  --accent:#22c55e;
+  --danger:#ef4444;
+  --bg:#f8fafc;
+  --card:#ffffff;
+  --text:#0f172a;
+  --muted:#64748b;
+}
+
+body{
+  background:linear-gradient(135deg,#f8fafc,#e2e8f0);
+  font-family:'Inter',system-ui,sans-serif;
+  padding:15px;
+  color:var(--text);
+}
+
+h1{
+  text-align:center;
+  font-weight:700;
+  margin-bottom:25px;
+}
+
+.card-box{
+  background:var(--card);
+  border-radius:18px;
+  padding:18px;
+  box-shadow:0 10px 25px rgba(0,0,0,.07);
+  margin-bottom:20px;
+}
+
+.table-responsive{
+  overflow-x:auto;
+}
+
+.table{
+  border-collapse:separate;
+  border-spacing:0 12px;
+  min-width:600px;
+}
+
+thead th{
+  color:var(--muted);
+  font-weight:500;
+  border:none;
+}
+
+tbody tr{
+  background:white;
+  box-shadow:0 6px 15px rgba(0,0,0,.06);
+  border-radius:12px;
+}
+
+tbody td{
+  padding:10px;
+  border:none;
+  vertical-align:middle;
+}
+
+.btn{
+  border-radius:12px;
+  font-weight:500;
+  flex:1 1 auto;
+}
+
+.priority-normal{color:#2563eb;font-weight:600;}
+.priority-alta{color:#f59e0b;font-weight:700;}
+.priority-urgente{color:#dc2626;font-weight:800;}
+
+.is-invalid{border-color:#dc3545;}
+.is-valid{border-color:#22c55e;}
+.small-error{color:#dc3545;font-size:.8rem;}
+
+.modal-content{
+  border-radius:18px;
+}
+
+/* ===== CALENDARIO ===== */
+.calendar-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:12px;
+  flex-wrap:wrap;
+}
+
+.calendar-header h5{
+  margin:0;
+  font-weight:600;
+  font-size:1rem;
+  text-align:center;
+  flex:1 1 100%;
+  margin:8px 0;
+}
+
+.calendar-grid{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  gap:8px;
+}
+
+.calendar-day{
+  background:#f1f5f9;
+  border-radius:12px;
+  padding:8px;
+  min-height:80px;
+  position:relative;
+  transition:.2s;
+  font-size:.8rem;
+}
+
+.calendar-day:hover{
+  transform:translateY(-1px);
+  box-shadow:0 6px 15px rgba(0,0,0,.08);
+}
+
+.calendar-day strong{
+  font-size:.9rem;
+}
+
+.day-normal{background:#dbeafe;}
+.day-alta{background:#fef3c7;}
+.day-urgente{background:#fee2e2;}
+
+.calendar-tooltip{
+  position:absolute;
+  bottom:4px;
+  left:4px;
+  right:4px;
+  font-size:.65rem;
+  color:#334155;
+  line-height:1.2;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+/* ===== MÓVILES ===== */
+@media (max-width:767px){
+  body{padding:10px;}
+  .calendar-grid{gap:4px;}
+  .calendar-day{min-height:60px;padding:6px;font-size:.7rem;}
+  .btn{font-size:.85rem;padding:.35rem .75rem;}
+  .table{min-width:500px;}
+  .card-box{padding:12px;}
+}
+
+/* ===== EVENTOS MÓVIL ===== */
+.event-card {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 6px 15px rgba(0,0,0,.06);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.event-card .event-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.event-card .event-title {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.event-card .event-dates {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.event-card .event-notes {
+  font-size: 0.85rem;
+}
+
+.event-card .event-priority {
+  font-weight: 600;
+}
+
+.event-card .card-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>📅 AgendaPro Ejecutiva </h1>
+
+<div class="row text-center">
+  <div class="col-12 col-md-6">
+    <div class="card-box">
+      <h6 class="text-muted">Hoy</h6>
+      <p id="dailySummary" class="fs-6 fw-semibold"></p>
+    </div>
+  </div>
+  <div class="col-12 col-md-6">
+    <div class="card-box">
+      <h6 class="text-muted">Próximos 7 días</h6>
+      <p id="weeklySummary" class="fs-6 fw-semibold"></p>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-3 justify-content-center g-2">
+  <div class="col-12 col-md-3">
+    <input type="date" id="filterDate" class="form-control" onchange="renderTable()">
+  </div>
+  <div class="col-12 col-md-3">
+    <select id="filterPriority" class="form-select" onchange="renderTable()">
+      <option value="">Todas las prioridades</option>
+      <option value="normal">Normal</option>
+      <option value="alta">Alta</option>
+      <option value="urgente">Urgente</option>
+    </select>
+  </div>
+</div>
+
+<div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
+  <button class="btn btn-primary" onclick="openForm()"><i class="fas fa-plus"></i> Nuevo Evento</button>
+  <button class="btn btn-danger" onclick="confirmPDF()"><i class="fas fa-file-pdf"></i> PDF</button>
+  <button class="btn btn-success" onclick="confirmExcel()"><i class="fas fa-file-excel"></i> Excel</button>
+</div>
+
+<!-- CALENDARIO -->
+<div class="card-box mb-4">
+  <div class="calendar-header">
+    <button class="btn btn-light mb-1" onclick="changeMonth(-1)"><i class="fas fa-chevron-left"></i></button>
+    <h5 id="calendarTitle"></h5>
+    <button class="btn btn-light mb-1" onclick="changeMonth(1)"><i class="fas fa-chevron-right"></i></button>
+  </div>
+  <div id="calendar" class="calendar-grid"></div>
+</div>
+
+<!-- Tabla desktop -->
+<div class="table-responsive d-none d-md-block">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Título</th>
+        <th>Inicio</th>
+        <th>Fin</th>
+        <th>Notas</th>
+        <th>Prioridad</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="eventsTableBody"></tbody>
+  </table>
+</div>
+
+<!-- Eventos móviles -->
+<div class="d-md-none" id="eventsCardContainer"></div>
+
+<!-- MODAL -->
+<div class="modal fade" id="eventModal">
+<div class="modal-dialog modal-dialog-centered">
+<div class="modal-content">
+<div class="modal-header">
+<h5 class="modal-title">Evento</h5>
+<button class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<div class="modal-body">
+
+<input type="hidden" id="eventId">
+
+<label>Título *</label>
+<input id="eventTitle" class="form-control">
+<div id="errTitle" class="small-error"></div>
+
+<label class="mt-2">Inicio *</label>
+<input type="datetime-local" id="eventStart" class="form-control">
+<div id="errStart" class="small-error"></div>
+
+<label class="mt-2">Fin *</label>
+<input type="datetime-local" id="eventEnd" class="form-control">
+<div id="errEnd" class="small-error"></div>
+
+<label class="mt-2">Notas</label>
+<textarea id="eventNotes" class="form-control"></textarea>
+
+<label class="mt-2">Prioridad</label>
+<select id="eventPriority" class="form-select">
+<option value="normal">Normal</option>
+<option value="alta">Alta</option>
+<option value="urgente">Urgente</option>
+</select>
+
+<div class="text-end mt-3">
+<button class="btn btn-success px-4" onclick="saveEvent()">Guardar</button>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+let events = JSON.parse(localStorage.getItem("agendaProEvents")||"[]");
+const modal = new bootstrap.Modal(eventModal);
+const MIN_DURATION = 10 * 60 * 1000;
+let currentMonth = new Date();
+
+function openForm(){
+  eventId.value="";
+  eventTitle.value="";
+  eventStart.value="";
+  eventEnd.value="";
+  eventNotes.value="";
+  eventPriority.value="normal";
+  clearValidation();
+  modal.show();
+}
+
+function validateEvent() {
+  clearValidation();
+  let valid = true;
+
+  const title = eventTitle.value.trim();
+  const sVal = eventStart.value;
+  const eVal = eventEnd.value;
+  const notes = eventNotes.value.trim();
+  const MAX_NOTES_WORDS = 50; 
+  const MAX_TITLE_WORDS = 10; 
+
+
+  const titleWordsCount = title.split(/\s+/).filter(w => w).length;
+
+  if (title.length < 3) {
+    errTitle.textContent = "Mínimo 3 caracteres.";
+    markInvalid(eventTitle);
+    valid = false;
+  } else if (titleWordsCount > MAX_TITLE_WORDS) {
+    errTitle.textContent = `Título demasiado largo. Máximo ${MAX_TITLE_WORDS} palabras.`;
+    markInvalid(eventTitle);
+    valid = false;
+  } else {
+    markValid(eventTitle);
+  }
+
+  
+  if (!sVal) {
+    errStart.textContent = "Inicio obligatorio.";
+    markInvalid(eventStart);
+    valid = false;
+  }
+  if (!eVal) {
+    errEnd.textContent = "Fin obligatorio.";
+    markInvalid(eventEnd);
+    valid = false;
+  }
+
+  if (sVal && eVal) {
+    const s = new Date(sVal);
+    const e = new Date(eVal);
+
+    if (e <= s) {
+      errEnd.textContent = "Fin debe ser posterior.";
+      markInvalid(eventEnd);
+      valid = false;
+    } else if (e - s < MIN_DURATION) {
+      errEnd.textContent = "Duración mínima 10 min.";
+      markInvalid(eventEnd);
+      valid = false;
+    }
+
+    const clash = events.find(ev => {
+      if (ev.id === eventId.value) return false;
+      const es = new Date(ev.start);
+      const ee = new Date(ev.end);
+      return s < ee && e > es;
+    });
+
+    if (clash) {
+      errEnd.textContent = `Cruce con "${clash.title}"`;
+      markInvalid(eventEnd);
+      valid = false;
+    }
+  }
+
+  
+  const notesWordsCount = notes.split(/\s+/).filter(w => w).length;
+  if (notesWordsCount > MAX_NOTES_WORDS) {
+    alert(`Notas demasiado largas. Máximo ${MAX_NOTES_WORDS} palabras.`);
+    markInvalid(eventNotes);
+    valid = false;
+  } else if (notes) {
+    markValid(eventNotes);
+  }
+
+  return valid;
+}
+
+
+function markInvalid(el){el.classList.add("is-invalid");el.classList.remove("is-valid");}
+function markValid(el){el.classList.remove("is-invalid");el.classList.add("is-valid");}
+function clearValidation(){document.querySelectorAll(".is-invalid,.is-valid").forEach(e=>e.classList.remove("is-invalid","is-valid"));document.querySelectorAll(".small-error").forEach(e=>e.textContent="");}
+
+function saveEvent(){
+  if(!validateEvent()) return;
+
+  const ev={
+    id:eventId.value||Date.now().toString(),
+    title:eventTitle.value.trim(),
+    start:eventStart.value,
+    end:eventEnd.value,
+    notes:eventNotes.value,
+    priority:eventPriority.value
+  };
+
+  const i=events.findIndex(e=>e.id===ev.id);
+  i>=0?events[i]=ev:events.push(ev);
+
+  localStorage.setItem("agendaProEvents",JSON.stringify(events));
+  modal.hide();
+  renderTable();
+  renderCalendar();
+}
+
+function renderTable(){
+  const tbody = document.getElementById("eventsTableBody");
+  const cardContainer = document.getElementById("eventsCardContainer");
+  tbody.innerHTML = "";
+  cardContainer.innerHTML = "";
+
+  const fd = filterDate.value;
+  const fp = filterPriority.value;
+
+  events.forEach(e => {
+    if(fd && e.start.split("T")[0] !== fd) return;
+    if(fp && e.priority !== fp) return;
+
+    // Desktop table
+    tbody.innerHTML += `
+      <tr>
+        <td>${e.title}</td>
+        <td>${new Date(e.start).toLocaleString()}</td>
+        <td>${new Date(e.end).toLocaleString()}</td>
+        <td>${e.notes || ""}</td>
+        <td class="priority-${e.priority}">${e.priority}</td>
+        <td>
+          <button class="btn btn-sm btn-primary" onclick="editEvent('${e.id}')"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-sm btn-danger" onclick="deleteEvent('${e.id}')"><i class="fas fa-trash"></i></button>
+        </td>
+      </tr>`;
+
+    // Mobile cards
+    cardContainer.innerHTML += `
+      <div class="event-card">
+        <div class="event-header">
+          <div class="event-title">${e.title}</div>
+          <div class="event-priority priority-${e.priority}">${e.priority}</div>
+        </div>
+        <div class="event-dates">
+          <div>Inicio: ${new Date(e.start).toLocaleString()}</div>
+          <div>Fin: ${new Date(e.end).toLocaleString()}</div>
+        </div>
+        <div class="event-notes">${e.notes || ""}</div>
+        <div class="card-actions">
+          <button class="btn btn-sm btn-primary w-50" onclick="editEvent('${e.id}')"><i class="fas fa-edit"></i> Editar</button>
+          <button class="btn btn-sm btn-danger w-50" onclick="deleteEvent('${e.id}')"><i class="fas fa-trash"></i> Eliminar</button>
+        </div>
+      </div>`;
+  });
+
+  const today = new Date().toDateString();
+  dailySummary.textContent = events.filter(e => new Date(e.start).toDateString() === today).length + " eventos";
+
+  const limit = new Date(); limit.setDate(limit.getDate()+7);
+  weeklySummary.textContent = events.filter(e => new Date(e.start) <= limit).length + " eventos";
+}
+
+function editEvent(id){
+  const ev = events.find(e=>e.id===id);
+  if(!ev) return;
+  eventId.value=ev.id;
+  eventTitle.value=ev.title;
+  eventStart.value=ev.start;
+  eventEnd.value=ev.end;
+  eventNotes.value=ev.notes;
+  eventPriority.value=ev.priority;
+  clearValidation();
+  modal.show();
+}
+
+function deleteEvent(id){
+  if(!confirm("¿Eliminar evento?")) return;
+  events = events.filter(e=>e.id!==id);
+  localStorage.setItem("agendaProEvents",JSON.stringify(events));
+  renderTable();
+  renderCalendar();
+}
+
+// ===== CALENDARIO =====
+function changeMonth(offset){
+  currentMonth.setMonth(currentMonth.getMonth()+offset);
+  renderCalendar();
+}
+
+function renderCalendar(){
+  const cal=document.getElementById("calendar");
+  const title=document.getElementById("calendarTitle");
+  cal.innerHTML="";
+
+  const year=currentMonth.getFullYear();
+  const month=currentMonth.getMonth();
+  title.textContent=currentMonth.toLocaleDateString("es-ES",{month:"long",year:"numeric"});
+
+  const firstDay=new Date(year,month,1).getDay();
+  const daysInMonth=new Date(year,month+1,0).getDate();
+
+  for(let i=0;i<firstDay;i++) cal.innerHTML+=`<div></div>`;
+
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=`${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const dayEvents=events.filter(e=>e.start.startsWith(dateStr));
+
+    let cls="",p="";
+    if(dayEvents.some(e=>e.priority==="urgente")){cls="day-urgente";p="Urgente";}
+    else if(dayEvents.some(e=>e.priority==="alta")){cls="day-alta";p="Alta";}
+    else if(dayEvents.some(e=>e.priority==="normal")){cls="day-normal";p="Normal";}
+
+    cal.innerHTML+=`
+      <div class="calendar-day ${cls}">
+        <strong>${d}</strong>
+        <div class="calendar-tooltip">
+          ${dayEvents.length?`${dayEvents.length} evento(s) • ${p}`:"Sin eventos"}
+        </div>
+      </div>`;
+  }
+}
+
+// Inicialización
+renderTable();
+renderCalendar();
+</script>
+<script>
+// EXPORTAR EXCEL
+function confirmExcel(){
+  if(!events.length){alert("No hay eventos para exportar."); return;}
+  if(!confirm("¿Deseas exportar los eventos a Excel?")) return;
+
+  const data = events.map(e => ({
+    Título: e.title,
+    Inicio: new Date(e.start).toLocaleString(),
+    Fin: new Date(e.end).toLocaleString(),
+    Notas: e.notes || "",
+    Prioridad: e.priority
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Eventos");
+  XLSX.writeFile(wb, "AgendaPro_Eventos.xlsx");
+}
+</script>
+<script>
+function confirmPDF() {
+  if (!events.length) { alert("No hay eventos para exportar."); return; }
+  if (!confirm("¿Deseas exportar los eventos a PDF estilo card?")) return;
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('p', 'mm', 'a4');
+  const pageWidth = 210;
+  const margin = 15;
+  const maxCardWidth = pageWidth - 2 * margin;
+  let y = 20;
+  let cardsOnPage = 0;
+
+  // Título principal
+  doc.setFontSize(22);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(33, 37, 41);
+  doc.text("AgendaPro - Eventos", pageWidth / 2, 15, { align: "center" });
+
+  // Fecha generación
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(100);
+  doc.text("Generado: " + new Date().toLocaleString(), pageWidth / 2, 23, { align: "center" });
+
+  // Línea decorativa
+  doc.setDrawColor(33, 37, 41);
+  doc.setLineWidth(0.8);
+  doc.line(margin, 28, pageWidth - margin, 28);
+  y += 10;
+
+  events.forEach(e => {
+    // Color prioridad
+    let borderColor;
+    switch (e.priority) {
+      case "urgente": borderColor = [220, 38, 38]; break;
+      case "alta": borderColor = [245, 158, 11]; break;
+      default: borderColor = [37, 99, 235]; break;
+    }
+
+    // Limitar título a 10 palabras
+    const titleWords = e.title.split(/\s+/).slice(0, 10);
+    let titleText = titleWords.join(' ');
+
+    // Preparar wrap palabra por palabra
+    const words = titleText.split(' ');
+    const titleLines = [];
+    let line = '';
+    const maxCharsPerLine = 35; // Ajustable según ancho de card
+    words.forEach(word => {
+      if ((line + ' ' + word).trim().length > maxCharsPerLine) {
+        titleLines.push(line.trim());
+        line = word;
+      } else {
+        line += ' ' + word;
+      }
+    });
+    if (line) titleLines.push(line.trim());
+
+    // Notas
+    const notesLines = e.notes ? doc.splitTextToSize(e.notes, maxCardWidth - 20) : [];
+
+    const lineHeightTitle = 7;
+    const lineHeightNotes = 5;
+    const cardHeight = 12 + titleLines.length * lineHeightTitle + 6 + 6 + notesLines.length * lineHeightNotes + 12;
+
+    // Nueva página cada 3 cards
+    if (cardsOnPage >= 3) {
+      doc.addPage();
+      y = 20;
+      cardsOnPage = 0;
+    }
+
+    // Dibujar tarjeta
+    doc.setFillColor(250, 250, 250);
+    doc.setDrawColor(...borderColor);
+    doc.setLineWidth(0.7);
+    doc.roundedRect(margin, y, maxCardWidth, cardHeight, 3, 3, 'FD');
+
+    let textY = y + 8;
+
+    // Título
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...borderColor);
+    titleLines.forEach(line => {
+      doc.text(line, margin + 10, textY);
+      textY += lineHeightTitle;
+    });
+    textY += 2;
+
+    // Fechas
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(20, 20, 20);
+    doc.text("Inicio: " + new Date(e.start).toLocaleString(), margin + 10, textY); textY += 6;
+    doc.text("Fin: " + new Date(e.end).toLocaleString(), margin + 10, textY); textY += 6;
+
+    // Notas
+    if (notesLines.length) {
+      doc.text("Notas:", margin + 10, textY); textY += 5;
+      notesLines.forEach(line => {
+        doc.text(line, margin + 12, textY);
+        textY += lineHeightNotes;
+      });
+    }
+
+    // Prioridad
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...borderColor);
+    doc.text("Prioridad: " + e.priority, pageWidth - margin - 50, y + 10);
+
+    y += cardHeight + 5;
+    cardsOnPage++;
+  });
+
+  doc.save("AgendaPro_Eventos_Card.pdf");
+}
+
+</script>
+
+
+
+
+</body>
+</html>
