@@ -345,10 +345,29 @@ function validateEvent() {
   const notes = eventNotes.value.trim();
   const MAX_NOTES_WORDS = 50; 
   const MAX_TITLE_WORDS = 10; 
+  const MAX_WORD_LENGTH = 20; // Máxima longitud razonable de una palabra
 
+  const titleWords = title.split(/\s+/).filter(w => w);
+  const titleWordsCount = titleWords.length;
 
-  const titleWordsCount = title.split(/\s+/).filter(w => w).length;
+  const notesWords = notes.split(/\s+/).filter(w => w);
+  const notesWordsCount = notesWords.length;
 
+  // Expresión regular: letras, números, acentos, signos básicos
+  const validPattern = /^[a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ.,;:()\-?!\s]+$/;
+
+  // Función para validar palabras individuales
+  function wordsAreValid(words) {
+    return words.every(w => {
+      if (w.length > MAX_WORD_LENGTH) return false;  // palabra muy larga
+      // palabra con solo números muy largos o repetitivos
+      const letters = w.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ]/g,'');
+      if (!letters && w.length > 8) return false; // solo números largos
+      return true;
+    });
+  }
+
+  // === Validar título ===
   if (title.length < 3) {
     errTitle.textContent = "Mínimo 3 caracteres.";
     markInvalid(eventTitle);
@@ -357,35 +376,24 @@ function validateEvent() {
     errTitle.textContent = `Título demasiado largo. Máximo ${MAX_TITLE_WORDS} palabras.`;
     markInvalid(eventTitle);
     valid = false;
+  } else if (!validPattern.test(title) || !wordsAreValid(titleWords)) {
+    errTitle.textContent = "Título contiene caracteres inválidos o palabras irreales.";
+    markInvalid(eventTitle);
+    valid = false;
   } else {
     markValid(eventTitle);
   }
 
-  
-  if (!sVal) {
-    errStart.textContent = "Inicio obligatorio.";
-    markInvalid(eventStart);
-    valid = false;
-  }
-  if (!eVal) {
-    errEnd.textContent = "Fin obligatorio.";
-    markInvalid(eventEnd);
-    valid = false;
-  }
+  // === Validar fechas ===
+  if (!sVal) { errStart.textContent = "Inicio obligatorio."; markInvalid(eventStart); valid = false; }
+  if (!eVal) { errEnd.textContent = "Fin obligatorio."; markInvalid(eventEnd); valid = false; }
 
   if (sVal && eVal) {
     const s = new Date(sVal);
     const e = new Date(eVal);
 
-    if (e <= s) {
-      errEnd.textContent = "Fin debe ser posterior.";
-      markInvalid(eventEnd);
-      valid = false;
-    } else if (e - s < MIN_DURATION) {
-      errEnd.textContent = "Duración mínima 10 min.";
-      markInvalid(eventEnd);
-      valid = false;
-    }
+    if (e <= s) { errEnd.textContent = "Fin debe ser posterior."; markInvalid(eventEnd); valid = false; }
+    else if (e - s < MIN_DURATION) { errEnd.textContent = "Duración mínima 10 min."; markInvalid(eventEnd); valid = false; }
 
     const clash = events.find(ev => {
       if (ev.id === eventId.value) return false;
@@ -393,18 +401,16 @@ function validateEvent() {
       const ee = new Date(ev.end);
       return s < ee && e > es;
     });
-
-    if (clash) {
-      errEnd.textContent = `Cruce con "${clash.title}"`;
-      markInvalid(eventEnd);
-      valid = false;
-    }
+    if (clash) { errEnd.textContent = `Cruce con "${clash.title}"`; markInvalid(eventEnd); valid = false; }
   }
 
-  
-  const notesWordsCount = notes.split(/\s+/).filter(w => w).length;
+  // === Validar notas ===
   if (notesWordsCount > MAX_NOTES_WORDS) {
     alert(`Notas demasiado largas. Máximo ${MAX_NOTES_WORDS} palabras.`);
+    markInvalid(eventNotes);
+    valid = false;
+  } else if (notes && (!validPattern.test(notes) || !wordsAreValid(notesWords))) {
+    alert("Notas contienen caracteres inválidos o palabras irreales.");
     markInvalid(eventNotes);
     valid = false;
   } else if (notes) {
@@ -413,6 +419,7 @@ function validateEvent() {
 
   return valid;
 }
+
 
 
 function markInvalid(el){el.classList.add("is-invalid");el.classList.remove("is-valid");}
